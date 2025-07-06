@@ -1,0 +1,236 @@
+<!DOCTYPE html>
+<html>
+<head>
+  <title>Polygon Wallet</title>
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;600&display=swap" rel="stylesheet">
+  <script src="https://cdn.jsdelivr.net/npm/ethers@5.7.2/dist/ethers.umd.min.js"></script>
+  <style>
+    body {
+      background: linear-gradient(135deg, #e0e7ff 0%, #f8fafc 100%);
+      font-family: 'Inter', Arial, sans-serif;
+      min-height: 100vh;
+      margin: 0;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+    }
+    .wallet-container {
+      background: #fff;
+      border-radius: 18px;
+      box-shadow: 0 4px 24px rgba(80, 112, 255, 0.10), 0 1.5px 4px rgba(0,0,0,0.04);
+      padding: 2.5rem 2rem 2rem 2rem;
+      max-width: 370px;
+      width: 100%;
+      margin: 2rem;
+      display: flex;
+      flex-direction: column;
+      gap: 1.5rem;
+    }
+    .wallet-header {
+      text-align: center;
+      font-weight: 600;
+      font-size: 1.7rem;
+      color: #4f46e5;
+      margin-bottom: 0.5rem;
+    }
+    .wallet-section {
+      background: #f1f5f9;
+      border-radius: 12px;
+      padding: 1rem;
+      margin-bottom: 0.5rem;
+      word-break: break-all;
+    }
+    .wallet-label {
+      font-size: 0.95rem;
+      color: #64748b;
+      font-weight: 600;
+      margin-bottom: 0.2rem;
+      display: block;
+    }
+    .wallet-value {
+      font-size: 1.05rem;
+      color: #0f172a;
+      font-family: monospace;
+      margin-bottom: 0.5rem;
+    }
+    .wallet-btn, button {
+      background: linear-gradient(90deg, #6366f1 0%, #818cf8 100%);
+      color: #fff;
+      border: none;
+      border-radius: 8px;
+      padding: 0.7rem 1.2rem;
+      font-size: 1rem;
+      font-weight: 600;
+      cursor: pointer;
+      transition: background 0.2s, box-shadow 0.2s;
+      box-shadow: 0 2px 8px rgba(99,102,241,0.08);
+      margin-top: 0.5rem;
+      margin-right: 0.5rem;
+    }
+    .wallet-btn:active, button:active {
+      background: #6366f1;
+    }
+    .wallet-input {
+      width: 100%;
+      padding: 0.6rem 0.9rem;
+      border: 1.5px solid #c7d2fe;
+      border-radius: 7px;
+      font-size: 1rem;
+      margin-bottom: 0.7rem;
+      background: #f8fafc;
+      color: #334155;
+      transition: border 0.2s;
+    }
+    .wallet-input:focus {
+      border: 1.5px solid #6366f1;
+      outline: none;
+    }
+    .tx-hash {
+      font-size: 0.95rem;
+      color: #16a34a;
+      margin-top: 0.5rem;
+      word-break: break-all;
+    }
+    .wallet-btn-group {
+      display: flex;
+      flex-direction: row;
+      gap: 0.5rem;
+      margin-bottom: 1rem;
+    }
+    @media (max-width: 500px) {
+      .wallet-container {
+        padding: 1.2rem 0.5rem;
+      }
+      .wallet-btn-group {
+        flex-direction: column;
+        gap: 0.5rem;
+      }
+    }
+  </style>
+</head>
+<body > 
+  <div class="wallet-container">
+    <div class="wallet-header">Polygon Wallet</div>
+    <div id="wallet-section">
+      <div class="wallet-btn-group">
+        <button class="wallet-btn" onclick="createNewWallet()">Create New Wallet</button>
+        <button class="wallet-btn" onclick="showLoginWallet()">Login Wallet</button>
+      </div>
+      <div id="login-wallet-form" style="display:none; margin-top:1rem;">
+        <input id="login-private-key" class="wallet-input" placeholder="Enter Private Key" type="password">
+        <button class="wallet-btn" onclick="loginWallet()">Login</button>
+        <button class="wallet-btn" style="background:#e5e7eb;color:#334155;" onclick="hideLoginWallet()">Cancel</button>
+        <div id="login-error" style="color:#dc2626;margin-top:0.5rem;"></div>
+      </div>
+    </div>
+    <div id="send-section" style="display:none;">
+      <div class="wallet-label">Send MATIC</div>
+      <input id="to" class="wallet-input" placeholder="Recipient Address">
+      <input id="amount" class="wallet-input" placeholder="Amount (MATIC)" type="number" min="0" step="any">
+      <button class="wallet-btn" onclick="sendMatic()">Send</button>
+      <div id="tx"></div>
+    </div>
+  </div>
+  <script>
+    let wallet;
+    const POLYGON_RPC = "https://polygon-rpc.com"; // Mainnet
+    const USDT_ADDRESS = "0x3813e82e6f7098b9583FC0F33a962D02018B6803";
+    const ERC20_ABI = [
+      "function balanceOf(address owner) view returns (uint256)",
+      "function decimals() view returns (uint8)"
+    ];
+
+    window.resetWalletUI = function() {
+      document.getElementById("wallet-section").innerHTML = `
+        <div class='wallet-btn-group'>
+          <button class='wallet-btn' onclick='createNewWallet()'>Create New Wallet</button>
+          <button class='wallet-btn' onclick='showLoginWallet()'>Login Wallet</button>
+        </div>
+        <div id='login-wallet-form' style='display:none; margin-top:1rem;'>
+          <input id='login-private-key' class='wallet-input' placeholder='Enter Private Key' type='password'>
+          <button class='wallet-btn' onclick='loginWallet()'>Login</button>
+          <button class='wallet-btn' style='background:#e5e7eb;color:#334155;' onclick='hideLoginWallet()'>Cancel</button>
+          <div id='login-error' style='color:#dc2626;margin-top:0.5rem;'></div>
+        </div>
+      `;
+      document.getElementById("send-section").style.display = "none";
+    }
+
+    window.createNewWallet = async function() {
+      console.log("Create New Wallet clicked");
+      wallet = ethers.Wallet.createRandom();
+      await displayWalletInfo();
+    }
+
+    window.showLoginWallet = function() {
+      document.getElementById("login-wallet-form").style.display = "block";
+      document.getElementById("login-error").innerText = "";
+    }
+
+    window.hideLoginWallet = function() {
+      document.getElementById("login-wallet-form").style.display = "none";
+      document.getElementById("login-error").innerText = "";
+    }
+
+    window.loginWallet = async function() {
+      const pk = document.getElementById("login-private-key").value.trim();
+      console.log("Private key entered:", JSON.stringify(pk), "Length:", pk.length);
+      if (!pk) {
+        document.getElementById("login-error").innerText = "Please enter a private key.";
+        return;
+      }
+      try {
+        wallet = new ethers.Wallet(pk);
+        await displayWalletInfo();
+      } catch (e) {
+        document.getElementById("login-error").innerText = "Invalid private key: " + e.message;
+        console.error("Wallet error:", e);
+      }
+    }
+
+    async function displayWalletInfo() {
+      const provider = new ethers.providers.JsonRpcProvider(POLYGON_RPC);
+      const bal = await provider.getBalance(wallet.address);
+
+      // Fetch USDT balance
+      const usdt = new ethers.Contract(USDT_ADDRESS, ERC20_ABI, provider);
+      let usdtBalance = await usdt.balanceOf(wallet.address);
+      const usdtDecimals = await usdt.decimals();
+      usdtBalance = ethers.utils.formatUnits(usdtBalance, usdtDecimals);
+
+      document.getElementById("wallet-section").innerHTML = `
+        <div class='wallet-label'>Address</div>
+        <div class='wallet-section wallet-value'>${wallet.address}</div>
+        <div class='wallet-label'>Private Key</div>
+        <div class='wallet-section wallet-value' style='background:#fef9c3;color:#b45309;'>${wallet.privateKey}</div>
+        <div class='wallet-label'>Balance</div>
+        <div class='wallet-section wallet-value'>${ethers.utils.formatEther(bal)} MATIC</div>
+        <div class='wallet-label'>USDT Balance</div>
+        <div class='wallet-section wallet-value'>${usdtBalance} USDT</div>
+        <button class='wallet-btn' style='background:#e5e7eb;color:#334155;' onclick='resetWalletUI()'>Logout</button>
+      `;
+      document.getElementById("send-section").style.display = "block";
+      document.getElementById("tx").innerHTML = "";
+    }
+
+    window.sendMatic = async function() {
+      if (!wallet) return alert("Create or login to a wallet first!");
+      const to = document.getElementById("to").value;
+      const amount = document.getElementById("amount").value;
+      if (!to || !amount) return alert("Please enter recipient and amount.");
+      const provider = new ethers.providers.JsonRpcProvider(POLYGON_RPC);
+      const signer = wallet.connect(provider);
+      try {
+        const tx = await signer.sendTransaction({
+          to,
+          value: ethers.utils.parseEther(amount)
+        });
+        document.getElementById("tx").innerHTML = `<div class='tx-hash'><b>Tx Hash:</b> <a href='https://polygonscan.com/tx/${tx.hash}' target='_blank' rel='noopener'>${tx.hash}</a></div>`;
+      } catch (e) {
+        document.getElementById("tx").innerHTML = `<div style='color:#dc2626;'>Error: ${e.message}</div>`;
+      }
+    }
+  </script>
+</body>
+</html> 

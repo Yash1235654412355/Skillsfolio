@@ -1,0 +1,508 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>Skillfolio – Inbox Demo</title>
+  <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;600;700;800&display=swap" rel="stylesheet">
+  <style>
+    body {
+      margin: 0;
+      padding: 0;
+      background: var(--bg);
+      color: var(--dark);
+      font-family: var(--font);
+      min-height: 100vh;
+    }
+    .inbox-frame {
+      position: fixed;
+      top: 0;
+      left: 0;
+      width: 100vw !important;
+      max-width: 100vw !important;
+      height: 100vh !important;
+      min-width: 220px;
+      max-width: 100vw;
+      display: flex;
+      flex-direction: row;
+      background: rgba(255,255,255,0.7);
+      backdrop-filter: blur(16px) saturate(180%);
+      border-radius: 0 !important;
+      box-shadow: none !important;
+      z-index: 20;
+      overflow: hidden;
+      border: none !important;
+      margin: 0 !important;
+      padding: 0 !important;
+    }
+    .contacts-list {
+      flex: 0 0 20vw;
+      max-width: 20vw;
+      min-width: 200px;
+      background: var(--card);
+      border-right: 1.5px solid #e3f2fd;
+      box-sizing: border-box;
+      height: 100vh;
+    }
+    .chat-area {
+      flex: 1 1 80vw;
+      min-width: 0;
+      background: var(--bg);
+      height: 100vh;
+      box-sizing: border-box;
+      overflow-x: hidden;
+    }
+    .contact-item {
+      display: flex;
+      flex-direction: column;
+      align-items: center;
+      gap: 6px;
+      cursor: pointer;
+      transition: background 0.15s, box-shadow 0.15s;
+      border-radius: 16px;
+      padding: 6px 10px;
+      min-width: 60px;
+    }
+    .contact-item.active, .contact-item:hover {
+      background: rgba(55,181,242,0.10);
+      box-shadow: 0 2px 8px #37B5F222;
+    }
+    .contact-avatar {
+      width: 44px;
+      height: 44px;
+      border-radius: 50%;
+      background: linear-gradient(135deg, #37B5F2 0%, #e0e0e0 100%);
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      font-size: 20px;
+      color: #fff;
+      font-weight: 700;
+      box-shadow: 0 2px 8px #37B5F222;
+      margin-bottom: 2px;
+    }
+    .contact-name {
+      font-weight: 600;
+      font-size: 13px;
+      color: #23272f;
+      text-align: center;
+      white-space: nowrap;
+      overflow: hidden;
+      text-overflow: ellipsis;
+      max-width: 60px;
+    }
+    .chat-messages {
+      flex: 1;
+      overflow-y: auto;
+      padding: 18px 18px 0 18px;
+      display: flex;
+      flex-direction: column;
+      gap: 12px;
+      background: none;
+      min-height: 180px;
+      scrollbar-width: thin;
+      scrollbar-color: #37B5F2 #e0f7fa;
+    }
+    .chat-message {
+      display: flex;
+      align-items: flex-end;
+      gap: 8px;
+      margin-bottom: 2px;
+    }
+    .chat-message.me {
+      flex-direction: row-reverse;
+    }
+    .chat-bubble {
+      max-width: 70%;
+      padding: 10px 16px;
+      border-radius: 18px 18px 6px 18px;
+      background: linear-gradient(135deg, #37B5F2 0%, #6dd5fa 100%);
+      color: #fff;
+      font-size: 15px;
+      box-shadow: 0 2px 8px #37B5F222;
+      word-break: break-word;
+      transition: background 0.2s;
+    }
+    .chat-message.me .chat-bubble {
+      background: linear-gradient(135deg, #e0e0e0 0%, #b2ebf2 100%);
+      color: #23272f;
+      border-radius: 18px 18px 18px 6px;
+    }
+    .chat-avatar {
+      width: 32px;
+      height: 32px;
+      border-radius: 50%;
+      background: linear-gradient(135deg, #37B5F2 0%, #e0e0e0 100%);
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      font-size: 15px;
+      color: #fff;
+      font-weight: 700;
+      box-shadow: 0 2px 8px #37B5F222;
+    }
+    .chat-upload-preview {
+      margin-top: 8px;
+      display: flex;
+      gap: 10px;
+      flex-wrap: wrap;
+      padding-left: 18px;
+    }
+    .chat-upload-thumb {
+      max-width: 60px;
+      max-height: 60px;
+      border-radius: 8px;
+      box-shadow: 0 1px 4px #37B5F211;
+      object-fit: cover;
+      background: #f2f2f2;
+      padding: 2px;
+    }
+    .chat-upload-doc {
+      display: flex;
+      align-items: center;
+      gap: 4px;
+      background: #e0f7fa;
+      border-radius: 6px;
+      padding: 4px 8px;
+      font-size: 13px;
+      color: #23272f;
+    }
+    .chat-voice-note {
+      display: flex;
+      align-items: center;
+      gap: 6px;
+      background: #e0f7fa;
+      border-radius: 8px;
+      padding: 6px 10px;
+      margin-top: 6px;
+      font-size: 14px;
+      color: #23272f;
+    }
+    .chat-input-row {
+      display: flex;
+      align-items: center;
+      gap: 8px;
+      padding: 14px 18px 14px 18px;
+      background: rgba(255,255,255,0.85);
+      border-top: 1.5px solid #e3f2fd;
+      position: relative;
+      border-radius: 0 0 24px 0;
+      box-shadow: 0 -2px 8px #37B5F211;
+      z-index: 2;
+    }
+    .chat-junction-btn {
+      background: none;
+      border: none;
+      font-size: 22px;
+      color: #37B5F2;
+      margin-right: 6px;
+      cursor: pointer;
+      border-radius: 50%;
+      padding: 4px;
+      transition: background 0.15s;
+      position: relative;
+      z-index: 2;
+    }
+    .chat-junction-btn:hover {
+      background: #e0f7fa;
+    }
+    .chat-junction-menu {
+      display: none;
+      position: absolute;
+      bottom: 54px;
+      left: 10px;
+      background: #fff;
+      border: 1.5px solid #e3f2fd;
+      border-radius: 14px;
+      box-shadow: 0 2px 12px rgba(46,46,46,0.10);
+      padding: 4px 0;
+      z-index: 10;
+      min-width: 48px;
+      flex-direction: column;
+      gap: 0;
+    }
+    .chat-junction-item {
+      background: none;
+      border: none;
+      color: #23272f;
+      font-size: 22px;
+      padding: 8px 10px;
+      text-align: center;
+      cursor: pointer;
+      width: 100%;
+      border-radius: 0;
+      transition: background 0.12s;
+      line-height: 1;
+    }
+    .chat-junction-item:hover {
+      background: #e0f7fa;
+    }
+    .chat-input {
+      flex: 1;
+      padding: 10px 14px;
+      border-radius: 18px;
+      border: 1.5px solid #b2ebf2;
+      font-size: 15px;
+      background: #f8fbfd;
+      box-shadow: 0 1px 4px #37B5F211;
+      outline: none;
+      transition: border 0.2s;
+    }
+    .chat-input:focus {
+      border: 1.5px solid #37B5F2;
+    }
+    .chat-upload-input { display: none; }
+    .emoji-picker {
+      display: none;
+      position: absolute;
+      bottom: 54px;
+      left: 18px;
+      background: #fff;
+      border: 1.5px solid #e3f2fd;
+      border-radius: 14px;
+      box-shadow: 0 2px 12px rgba(46,46,46,0.10);
+      padding: 10px 14px;
+      z-index: 10;
+    }
+    .emoji-picker span {
+      font-size: 24px;
+      cursor: pointer;
+      margin: 2px;
+      transition: transform 0.1s;
+    }
+    .emoji-picker span:hover { transform: scale(1.2); }
+    @media (max-width: 900px) {
+      .inbox-frame {
+        flex-direction: column;
+        width: 100vw !important;
+        max-width: 100vw !important;
+        height: 100vh !important;
+      }
+      .contacts-list, .chat-area {
+        max-width: 100vw !important;
+        min-width: 0 !important;
+        flex: 0 0 100% !important;
+        height: auto !important;
+      }
+    }
+    .nav-search {
+      padding: 7px 16px;
+      border-radius: 18px;
+      border: 1.5px solid #b2ebf2;
+      font-size: 15px;
+      background: #f8fbfd;
+      color: #23272f;
+      margin: 0 12px;
+      outline: none;
+      transition: border 0.2s, box-shadow 0.2s;
+      min-width: 120px;
+      max-width: 220px;
+    }
+    .nav-search:focus {
+      border: 1.5px solid #37B5F2;
+      box-shadow: 0 2px 8px #37B5F222;
+    }
+    @media (max-width: 700px) {
+      .nav-search { min-width: 60px; max-width: 100px; font-size: 13px; padding: 6px 8px; }
+    }
+  </style>
+</head>
+<body>
+  <div class="inbox-frame">
+    <div class="contacts-list" id="contacts-list"></div>
+    <div class="chat-area">
+      <div class="chat-messages" id="chat-messages"></div>
+      <div class="chat-upload-preview" id="chat-upload-preview"></div>
+      <div class="chat-input-row">
+        <button class="chat-junction-btn" id="chat-junction-btn" title="More actions">⋮</button>
+        <div class="chat-junction-menu" id="chat-junction-menu">
+          <button class="chat-junction-item" id="junction-emoji" title="Emoji">😊</button>
+          <button class="chat-junction-item" id="junction-attach" title="Attach">📎</button>
+          <button class="chat-junction-item" id="junction-call" title="Call">📞</button>
+        </div>
+        <input class="chat-input" id="chat-input" type="text" placeholder="Type a message..." />
+        <input type="file" id="chat-upload" class="chat-upload-input" multiple accept="image/*,video/*,.pdf,.doc,.docx,.txt,.ppt,.pptx,.xls,.xlsx,.csv,.mp3,.wav,.ogg" />
+        <button class="chat-send-btn" id="chat-send">Send</button>
+      </div>
+    </div>
+  </div>
+  <script>
+    // Mock contacts and chat data
+    const contacts = [
+      { name: 'Priya S.', avatar: 'PS', id: 1 },
+      { name: 'Alex Kim', avatar: 'AK', id: 2 },
+      { name: 'Samira R.', avatar: 'SR', id: 3 },
+      { name: 'Jane Doe', avatar: 'JD', id: 4 }
+    ];
+    let chatData = {
+      1: [
+        { me: false, text: 'Hi Jane! Congrats on your hackathon win! 🏆', type: 'text' },
+        { me: true, text: 'Thank you so much, Priya! 😊', type: 'text' },
+        { me: false, text: 'Are you free for a quick call tomorrow?', type: 'text' },
+        { me: true, text: 'Yes, let me know the time!', type: 'text' }
+      ],
+      2: [
+        { me: false, text: 'Let\'s collaborate on the new project.', type: 'text' }
+      ],
+      3: [
+        { me: false, text: 'Congrats on your achievement! 🎉', type: 'text' }
+      ],
+      4: [
+        { me: true, text: 'Hey, this is my own chat!', type: 'text' }
+      ]
+    };
+    let currentContactId = 1;
+    // Render contacts
+    const contactsList = document.getElementById('contacts-list');
+    contactsList.innerHTML = '';
+    contacts.forEach((c, i) => {
+      const div = document.createElement('div');
+      div.className = 'contact-item' + (c.id === currentContactId ? ' active' : '');
+      div.innerHTML = `<div class="contact-avatar">${c.avatar}</div><div class="contact-name">${c.name}</div>`;
+      div.addEventListener('click', () => {
+        currentContactId = c.id;
+        document.querySelectorAll('.contact-item').forEach(item => item.classList.remove('active'));
+        div.classList.add('active');
+        renderChat();
+      });
+      contactsList.appendChild(div);
+    });
+    // Chat upload preview state
+    let uploadFiles = [];
+    // Render chat
+    function renderChat() {
+      const chatMessagesDiv = document.getElementById('chat-messages');
+      chatMessagesDiv.innerHTML = '';
+      (chatData[currentContactId] || []).forEach(msg => {
+        const msgDiv = document.createElement('div');
+        msgDiv.className = 'chat-message' + (msg.me ? ' me' : '');
+        let bubble = '';
+        if (msg.type === 'text') {
+          bubble = `<div class="chat-bubble">${msg.text}</div>`;
+        } else if (msg.type === 'image') {
+          bubble = `<div class="chat-bubble"><img src="${msg.url}" class="chat-upload-thumb" /></div>`;
+        } else if (msg.type === 'video') {
+          bubble = `<div class="chat-bubble"><video src="${msg.url}" class="chat-upload-thumb" controls></video></div>`;
+        } else if (msg.type === 'audio') {
+          bubble = `<div class="chat-bubble"><div class="chat-voice-note"><span>🎵</span><audio src="${msg.url}" controls style="height:24px;"></audio></div></div>`;
+        } else if (msg.type === 'file') {
+          bubble = `<div class="chat-bubble"><div class="chat-upload-doc"><span>📄</span><a href="${msg.url}" target="_blank">${msg.name}</a></div></div>`;
+        } else if (msg.type === 'link') {
+          bubble = `<div class="chat-bubble"><a href="${msg.url}" target="_blank">🔗 ${msg.url}</a></div>`;
+        }
+        msgDiv.innerHTML = `<div class="chat-avatar">${msg.me ? contacts.find(c=>c.id===currentContactId).avatar : contacts.find(c=>c.id!==currentContactId).avatar || 'PS'}</div>${bubble}`;
+        chatMessagesDiv.appendChild(msgDiv);
+      });
+      chatMessagesDiv.scrollTop = chatMessagesDiv.scrollHeight;
+    }
+    renderChat();
+    // Junction menu logic
+    const junctionBtn = document.getElementById('chat-junction-btn');
+    const junctionMenu = document.getElementById('chat-junction-menu');
+    junctionBtn.addEventListener('click', e => {
+      e.stopPropagation();
+      junctionMenu.style.display = junctionMenu.style.display === 'block' ? 'none' : 'block';
+    });
+    document.body.addEventListener('click', () => {
+      junctionMenu.style.display = 'none';
+    });
+    // Junction menu actions
+    document.getElementById('junction-emoji').addEventListener('click', e => {
+      e.preventDefault();
+      // Show emoji picker
+      const emojiPicker = document.getElementById('emoji-picker');
+      if (emojiPicker) {
+        emojiPicker.style.display = emojiPicker.style.display === 'block' ? 'none' : 'block';
+      }
+      junctionMenu.style.display = 'none';
+    });
+    document.getElementById('junction-attach').addEventListener('click', e => {
+      e.preventDefault();
+      const chatUpload = document.getElementById('chat-upload');
+      if (chatUpload) chatUpload.click();
+      junctionMenu.style.display = 'none';
+    });
+    document.getElementById('junction-call').addEventListener('click', e => {
+      e.preventDefault();
+      alert('Call feature coming soon!');
+      junctionMenu.style.display = 'none';
+    });
+    // File upload logic
+    const chatUpload = document.getElementById('chat-upload');
+    const chatUploadPreview = document.getElementById('chat-upload-preview');
+    chatUpload.addEventListener('change', e => {
+      uploadFiles = Array.from(e.target.files);
+      chatUploadPreview.innerHTML = '';
+      uploadFiles.forEach(file => {
+        let preview = '';
+        if (file.type.startsWith('image/')) {
+          const url = URL.createObjectURL(file);
+          preview = `<img src="${url}" class="chat-upload-thumb" />`;
+        } else if (file.type.startsWith('video/')) {
+          const url = URL.createObjectURL(file);
+          preview = `<video src="${url}" class="chat-upload-thumb" controls></video>`;
+        } else if (file.type.startsWith('audio/')) {
+          const url = URL.createObjectURL(file);
+          preview = `<div class="chat-voice-note"><span>🎵</span><audio src="${url}" controls style="height:24px;"></audio></div>`;
+        } else if (file.type.match(/pdf|doc|docx|ppt|pptx|xls|xlsx|csv|txt/)) {
+          preview = `<div class="chat-upload-doc"><span>📄</span>${file.name}</div>`;
+        }
+        chatUploadPreview.innerHTML += preview;
+      });
+    });
+    // Send message logic
+    const chatInput = document.getElementById('chat-input');
+    const chatSend = document.getElementById('chat-send');
+    chatSend.addEventListener('click', sendMessage);
+    chatInput.addEventListener('keydown', e => { if (e.key === 'Enter') sendMessage(); });
+    function sendMessage() {
+      const text = chatInput.value.trim();
+      if (text) {
+        // Detect link
+        const urlRegex = /(https?:\/\/[^\s]+)/g;
+        if (urlRegex.test(text)) {
+          chatData[currentContactId].push({ me: true, type: 'link', url: text });
+        } else {
+          chatData[currentContactId].push({ me: true, type: 'text', text });
+        }
+      }
+      // Handle uploads
+      if (uploadFiles.length) {
+        uploadFiles.forEach(file => {
+          const url = URL.createObjectURL(file);
+          if (file.type.startsWith('image/')) {
+            chatData[currentContactId].push({ me: true, type: 'image', url });
+          } else if (file.type.startsWith('video/')) {
+            chatData[currentContactId].push({ me: true, type: 'video', url });
+          } else if (file.type.startsWith('audio/')) {
+            chatData[currentContactId].push({ me: true, type: 'audio', url });
+          } else if (file.type.match(/pdf|doc|docx|ppt|pptx|xls|xlsx|csv|txt/)) {
+            chatData[currentContactId].push({ me: true, type: 'file', url, name: file.name });
+          }
+        });
+        uploadFiles = [];
+        chatUpload.value = '';
+        chatUploadPreview.innerHTML = '';
+      }
+      chatInput.value = '';
+      renderChat();
+    }
+    // Voice note (mock)
+    const recordBtn = document.getElementById('record-btn');
+    let isRecording = false;
+    recordBtn.addEventListener('click', () => {
+      if (!isRecording) {
+        isRecording = true;
+        recordBtn.textContent = '⏹️';
+        setTimeout(() => {
+          isRecording = false;
+          recordBtn.textContent = '🎤';
+          // Add mock voice note
+          chatData[currentContactId].push({ me: true, type: 'audio', url: '', name: 'Voice Note (demo)' });
+          renderChat();
+        }, 2000); // 2s fake record
+      }
+    });
+  </script>
+</body>
+</html> 
